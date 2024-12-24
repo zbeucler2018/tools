@@ -1,0 +1,24 @@
+services:
+  master:
+    image: mariadb:10.11
+    container_name: master
+    hostname: master
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  
+  slave:
+    image: mariadb:10.11
+    container_name: slave
+    hostname: slave
+    ports:
+      - "3307:3306"
+    env_file:
+      - .env
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  
