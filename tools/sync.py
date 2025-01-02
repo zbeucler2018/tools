@@ -21,6 +21,9 @@ SLAVE_DB = {
     'port': 3307
 }
 
+BATCH_SIZE = 2
+assert BATCH_SIZE > 1, f"BATCH_SIZE needs to be bigger than 1 not {BATCH_SIZE}"
+
 def connect_to_database(config) -> MySQLConnection:
     try:
         connection = mysql.connector.connect(**config)
@@ -37,23 +40,23 @@ def sync_table(master_conn: MySQLConnection, slave_conn: MySQLConnection, table:
             slave_cursor.execute(f"SELECT MAX(timestamp) FROM {table}")
             slave_latest = slave_cursor.fetchone()[0] or "0"
 
-            # grab missing data from master
+            # fetch missing data
             master_cursor.execute(f"SELECT * FROM {table} WHERE timestamp > %s", (slave_latest,))
-            missing_data = master_cursor.fetchall()
 
-            if missing_data:
+            while True:
+                missing_data = master_cursor.fetchmany(BATCH_SIZE)
+                if not missing_data:
+                    print("Done syncing")
+                    break
                 keys = missing_data[0].keys()
                 columns = ", ".join(keys)
                 placeholders = ", ".join(["%s"] * len(keys))
                 query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-                # TODO: Make this iterative, s.t. it only fetches x records at a time
                 for row in missing_data:
-                    print("Executing: ", query, row.values())
-                    slave_cursor.execute(query, tuple(row.values()))
+                    data = tuple(row.values())
+                    print("Executing: ", query, data)
+                    slave_cursor.execute(query, data)
                 slave_conn.commit()
-                print(f"Synced {len(missing_data)} rows for table: {table}")
-            else:
-                print(f"No new data to sync for table: {table}")
     except Error as e:
         print(f"Error syncing table {table}: {e}")
 

@@ -21,6 +21,7 @@ docker exec -it master mysql testdb -u admin -padmin -e 'INSERT INTO table1 (tim
 docker exec -it master mysql testdb -u admin -padmin -e 'SELECT * FROM table1;'
 
 python3.10 ./../../tools/sync.py
+echo "SLAVE DATA..."
 docker exec -it slave mysql testdb -u admin -padmin -e 'SELECT * FROM table1;'
 
 docker compose down
