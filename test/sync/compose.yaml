@@ -11,10 +11,10 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   
-  slave:
+  replica:
     image: mariadb:10.11
-    container_name: slave
-    hostname: slave
+    container_name: replica
+    hostname: replica
     ports:
       - "3307:3306"
     env_file:
